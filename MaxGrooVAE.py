@@ -2,15 +2,11 @@ from pythonosc.osc_server import BlockingOSCUDPServer
 from pythonosc.dispatcher import Dispatcher
 from pythonosc.udp_client import SimpleUDPClient
 
-from magenta.models.music_vae import configs
 from magenta.models.music_vae.trained_model import TrainedModel
 
-from IO import max_to_NN_to_max, GROOVAE_2BAR_TAP_FIXED_VELOCITY
+from IO import max_to_NN_to_max, model_weights_path, model_config
 
-# ------------------ OSC IPs / ports ------------------ #
-#
 # connection parameters
-
 RECEIVE_IP = "192.168.235.19"
 SEND_IP="192.168.235.72"
 receiving_from_pd_port = 5000
@@ -25,6 +21,7 @@ def default_handler(address, *args):
     print(f"No action taken for message {address}: {args}")
 
 def BPM_groove_handler(address, *args):
+    print('Groove Received. Composing...')
     message=args[0].split(' ') # First value is the BPM, rest is the groove
     BPM[0]=float(message[0])
     groove[0]=' '.join(message[1:])
@@ -34,6 +31,7 @@ def BPM_groove_handler(address, *args):
     output[0]=[i for row in NN_output for i in row]
     # Send it to Max
     py_to_pd_OscSender.send_message("/pattern/0", output[0])
+    print('Sent the Drum Composition.')
 
 #drum_voice_pitch_map = {"kick": 36, 'snare': 38, 'tom-1': 47, 'tom-2': 42, 'chat': 64, 'ohat': 63}
 #drum_voices = list(drum_voice_pitch_map.keys())
@@ -68,9 +66,9 @@ if __name__ == '__main__':
 
     # Load the model
     print('\nLoading the model...')
-    groovae_2bar_tap = TrainedModel(config=configs.CONFIG_MAP['groovae_2bar_tap_fixed_velocity'],
+    groovae_2bar_tap = TrainedModel(config=model_config,
                                     batch_size=1,
-                                    checkpoint_dir_or_path=GROOVAE_2BAR_TAP_FIXED_VELOCITY)      
+                                    checkpoint_dir_or_path=model_weights_path)      
     print('Done!')
     print('Listening...\n')
     while (quitFlag[0] is False):

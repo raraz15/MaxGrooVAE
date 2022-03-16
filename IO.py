@@ -8,7 +8,8 @@ from note_seq.protobuf import music_pb2
 from magenta.models.music_vae import configs
 
 dc_tap = configs.CONFIG_MAP['groovae_2bar_tap_fixed_velocity'].data_converter
-GROOVAE_2BAR_TAP_FIXED_VELOCITY="groovae_2bar_tap_fixed_velocity.tar"
+model_config=configs.CONFIG_MAP['groovae_2bar_tap_fixed_velocity']
+model_weights_path="groovae_2bar_tap_fixed_velocity.tar"
 VELOCITY=85
 
 # If a sequence has notes at time before 0.0, scootch them up to 0
@@ -81,7 +82,7 @@ def get_tapped_2bar(s, velocity=VELOCITY, ride=False):
             n.pitch = 42
     return new_s
 
-def drumify(s, model, temperature=1.0): 
+def drumify(s, model, temperature=0.5): 
     encoding, mu, sigma = model.encode([s])
     decoded = model.decode(encoding, length=32, temperature=temperature)
     return decoded[0]    
