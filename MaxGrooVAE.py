@@ -1,3 +1,5 @@
+# Adapted from https://github.com/behzadhaki/CMC_SMC
+
 from pythonosc.osc_server import BlockingOSCUDPServer
 from pythonosc.dispatcher import Dispatcher
 from pythonosc.udp_client import SimpleUDPClient
@@ -12,15 +14,9 @@ SEND_IP="192.168.235.72"
 receiving_from_pd_port = 5000
 sending_to_pd_port = 6000
 
-# define the handler for quit message message
-def quit_message_handler(address, *args):
-    quitFlag[0] = True
-    print("QUITTING!")
-
-def default_handler(address, *args):
-    print(f"No action taken for message {address}: {args}")
 
 def BPM_groove_handler(address, *args):
+    """Takes a space separated string, parses it to BPM, Groove and gets composes a drum loop."""
     print('Groove Received. Composing...')
     message=args[0].split(' ') # First value is the BPM, rest is the groove
     BPM[0]=float(message[0])
@@ -33,8 +29,18 @@ def BPM_groove_handler(address, *args):
     py_to_pd_OscSender.send_message("/pattern/0", output[0])
     print('Sent the Drum Composition.')
 
-#drum_voice_pitch_map = {"kick": 36, 'snare': 38, 'tom-1': 47, 'tom-2': 42, 'chat': 64, 'ohat': 63}
-#drum_voices = list(drum_voice_pitch_map.keys())
+#def temperature_handler(address, *args):
+#    T[0]=args[0]
+#    print(f'Temperature change. Setting to: {T[0]}')
+
+# define the handler for quit message message
+def quit_message_handler(address, *args):
+    quitFlag[0] = True
+    print("QUITTING!")
+
+def default_handler(address, *args):
+    print(f"No action taken for message {address}: {args}")    
+
 
 if __name__ == '__main__':
 
@@ -43,6 +49,7 @@ if __name__ == '__main__':
     BPM = [120]
     quitFlag = [False]
     output=[['0']*32]
+    T=[1.0]
 
     # create an instance of the osc_sender class
     py_to_pd_OscSender = SimpleUDPClient(SEND_IP, sending_to_pd_port)
@@ -51,19 +58,16 @@ if __name__ == '__main__':
     # dispatcher is used to assign a callback to a received osc message
     # in other words the dispatcher routes the osc message to the right action using the address provided
     dispatcher = Dispatcher()
-
     # pass the handlers to the dispatcher
     dispatcher.map("/groove*", BPM_groove_handler)
+    #dispatcher.map("/temperature*", temperature_handler)
     dispatcher.map("/quit*", quit_message_handler)
-
-    # you can have a default_handler for messages that don't have dedicated handlers
+    # default_handler for messages that don't have dedicated handlers
     dispatcher.set_default_handler(default_handler)
-
     # python-osc method for establishing the UDP communication with pd
     server = BlockingOSCUDPServer((RECEIVE_IP, receiving_from_pd_port), dispatcher)
 
-    # ---------------------------------------------------------- #
-
+    # ------------------ Neural Drum Composer ------------------- #
     # Load the model
     print('\nLoading the model...')
     groovae_2bar_tap = TrainedModel(config=model_config,
@@ -71,5 +75,8 @@ if __name__ == '__main__':
                                     checkpoint_dir_or_path=model_weights_path)      
     print('Done!')
     print('Listening...\n')
+
+    # ------------------- Communication - Processing ------------ #
+
     while (quitFlag[0] is False):
         server.handle_request()

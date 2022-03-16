@@ -12,6 +12,7 @@ model_config=configs.CONFIG_MAP['groovae_2bar_tap_fixed_velocity']
 model_weights_path="groovae_2bar_tap_fixed_velocity.tar"
 VELOCITY=85
 
+
 # If a sequence has notes at time before 0.0, scootch them up to 0
 def start_notes_at_0(s):
     for n in s.notes:
@@ -70,6 +71,7 @@ def quantize_to_beat_divisions(beat, division=32):
     else: # do not quantize
         return beat    
 
+
 # quick method for turning a drumbeat into a tapped rhythm
 def get_tapped_2bar(s, velocity=VELOCITY, ride=False):
     new_s = dc_tap.from_tensors(dc_tap.to_tensors(s).inputs)[0]
@@ -82,7 +84,7 @@ def get_tapped_2bar(s, velocity=VELOCITY, ride=False):
             n.pitch = 42
     return new_s
 
-def drumify(s, model, temperature=0.5): 
+def drumify(s, model, temperature=0.5):
     encoding, mu, sigma = model.encode([s])
     decoded = model.decode(encoding, length=32, temperature=temperature)
     return decoded[0]    
