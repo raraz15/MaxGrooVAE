@@ -17,7 +17,6 @@ STEPS_PER_QUARTER_NOTE=4
 N_STEPS=N_BARS*BEATS_PER_BAR*STEPS_PER_QUARTER_NOTE
 VELOCITY=85 # Fixed Value
 
-
 # If a sequence has notes at time before 0.0, scootch them up to 0
 def start_notes_at_0(s):
     for n in s.notes:
@@ -109,7 +108,7 @@ def max_str_to_midi_array(max_str, BPM):
         midi_array.append([start_time,end_time,vel])
     return np.array(midi_array)
 
-def make_tap_sequence(midi_array, BPM, velocity=VELOCITY, tpq=480):
+def make_tap_sequence(midi_array, BPM, velocity=VELOCITY, tpq=220):
     """Creates a NoteSequence object from a midi_array."""
     note_sequence=music_pb2.NoteSequence()
     note_sequence.tempos.add(qpm=BPM)
@@ -124,7 +123,7 @@ def make_tap_sequence(midi_array, BPM, velocity=VELOCITY, tpq=480):
                                     velocity=velocity,
                                     start_time=onset_time,
                                     end_time=offset_time)
-    note_sequence.total_time=N_BARS*BEATS_PER_BAR*(60/BPM) # 2bars
+    note_sequence.total_time=N_BARS*BEATS_PER_BAR*(60/BPM)
     return note_sequence 
 
 def NN_output_to_Max(h, BPM, pre_quantization=False, beat_quantization_division=1):
@@ -141,7 +140,7 @@ def NN_output_to_Max(h, BPM, pre_quantization=False, beat_quantization_division=
     midi_array=np.array(midi_array)
     return midi_array
 
-def max_to_NN_to_max(max_lst, BPM, model):
+def max_to_NN_to_max(max_lst, BPM, model, temperature=1.0):
     """takes a max list, gets NN output and puts it in Max readable format."""
     # List to array
     midi_array=max_str_to_midi_array(max_lst, BPM)
@@ -154,7 +153,7 @@ def max_to_NN_to_max(max_lst, BPM, model):
     note_sequence=change_tempo(get_tapped_2bar(note_sequence, velocity=VELOCITY, ride=True), BPM)
     assert BPM==note_sequence.tempos[0].qpm, 'Tempo conversion failed at tapped bar creation'
     # Get NN prediction
-    h=change_tempo(drumify(note_sequence, model), BPM)
+    h=change_tempo(drumify(note_sequence, model, temperature=temperature), BPM)
     assert BPM==h.tempos[0].qpm, 'Tempo conversion failed at NN creation'
     # Convert to Max array
     MAX_array=NN_output_to_Max(h, BPM, beat_quantization_division=64)

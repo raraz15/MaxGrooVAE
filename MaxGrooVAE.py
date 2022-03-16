@@ -17,29 +17,29 @@ sending_to_pd_port = 6000
 
 def BPM_groove_handler(address, *args):
     """Takes a space separated string, parses it to BPM, Groove and gets composes a drum loop."""
-    print('Groove Received. Composing...')
+    print('\nGroove Received. Composing...')
     message=args[0].split(' ') # First value is the BPM, rest is the groove
     BPM[0]=float(message[0])
     groove[0]=' '.join(message[1:])
     # Get the NN composition
-    NN_output=max_to_NN_to_max(groove[0], BPM[0], groovae_2bar_tap)
+    NN_output=max_to_NN_to_max(groove[0], BPM[0], groovae_2bar_tap, temperature=T[0])
     # Flatten the array for sending to Max
     output[0]=[i for row in NN_output for i in row]
     # Send it to Max
     py_to_pd_OscSender.send_message("/pattern/0", output[0])
     print('Sent the Drum Composition.')
 
-#def temperature_handler(address, *args):
-#    T[0]=args[0]
-#    print(f'Temperature change. Setting to: {T[0]}')
+def temperature_handler(address, *args):
+    T[0]=args[0]
+    print(f'\nTemperature change. Setting to: {T[0]}')
 
 # define the handler for quit message message
 def quit_message_handler(address, *args):
     quitFlag[0] = True
-    print("QUITTING!")
+    print("\nQUITTING!")
 
 def default_handler(address, *args):
-    print(f"No action taken for message {address}: {args}")    
+    print(f"\nNo action taken for message {address}: {args}")    
 
 
 if __name__ == '__main__':
@@ -60,7 +60,7 @@ if __name__ == '__main__':
     dispatcher = Dispatcher()
     # pass the handlers to the dispatcher
     dispatcher.map("/groove*", BPM_groove_handler)
-    #dispatcher.map("/temperature*", temperature_handler)
+    dispatcher.map("/temperature*", temperature_handler)
     dispatcher.map("/quit*", quit_message_handler)
     # default_handler for messages that don't have dedicated handlers
     dispatcher.set_default_handler(default_handler)
