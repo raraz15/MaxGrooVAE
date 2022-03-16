@@ -79,16 +79,16 @@ def drumify(s, model, temperature=1.0):
     decoded = model.decode(encoding, length=32, temperature=temperature)
     return decoded[0]    
 
-
-def max_list_to_midi_array(max_list, BPM, n_bars=2, n_steps_per_quarter_note=4):
+def max_str_to_midi_array(max_str, BPM, n_bars=2, n_steps_per_quarter_note=4):
     """max_list timing are in bars. Assumes 4/4 timing"""
-    assert len(max_list)==3*(n_bars*4*n_steps_per_quarter_note), 'List length wrong!'
+    max_str=max_str.split(' ')
+    #assert len(max_str)==3*(n_bars*4*n_steps_per_quarter_note), 'List length wrong!'
     beat_dur=60/BPM # in sec
     midi_array=[]
-    for i in range((len(max_list)//3)):
-        start_step=4*float(max_list[3*i]) # in beats
-        end_step=4*float(max_list[3*i+1]) # in beats
-        vel=float(max_list[3*i+2])
+    for i in range((len(max_str)//3)):
+        start_step=4*float(max_str[3*i]) # in beats
+        end_step=4*float(max_str[3*i+1]) # in beats
+        vel=float(max_str[3*i+2])
         start_time=start_step*beat_dur
         end_time=end_step*beat_dur
         midi_array.append([start_time,end_time,vel])
@@ -130,4 +130,22 @@ def NN_output_to_Max(h, BPM, pre_quantization=False, beat_quantization_division=
         dur=quantize_to_beat_divisions((note.end_time-note.start_time)/beat_dur, beat_quantization_division)
         midi_array.append([start, dur, note.velocity, note.pitch])
     midi_array=np.array(midi_array)
-    return midi_array         
+    return midi_array  
+
+def max_to_NN_to_max(max_lst, BPM, model):
+    midi_array=max_list_to_midi_array(max_lst, BPM)
+    len(midi_array)
+    # Convert it into the pre-NN input format
+    note_sequence=make_tap_sequence(midi_array, BPM)
+    note_sequence=quantize(note_sequence)
+    set_to_drums(note_sequence)
+    # Convert to NN input format
+    note_sequence=start_notes_at_0(note_sequence)
+    note_sequence=change_tempo(get_tapped_2bar(note_sequence, velocity=VELOCITY, ride=True), BPM)
+    assert BPM==note_sequence.tempos[0].qpm, 'Tempo conversion failed at tapped bar creation'
+    # Get NN prediction
+    h=change_tempo(drumify(note_sequence, model), BPM)
+    assert BPM==h.tempos[0].qpm, 'Tempo conversion failed at NN creation'
+    # Convert to Max array
+    MAX_array=NN_output_to_Max(h, BPM, beat_quantization_division=64)
+    return MAX_array           

@@ -1,10 +1,12 @@
-import queue
-import time
 import random
 
 from pythonosc.osc_server import BlockingOSCUDPServer
 from pythonosc.dispatcher import Dispatcher
 from pythonosc.udp_client import SimpleUDPClient
+
+from magenta.models.music_vae.trained_model import TrainedModel
+
+from groovae_max import *
 
 # connection parameters
 ip = "127.0.0.1"
@@ -53,9 +55,18 @@ if __name__ == '__main__':
     # ---------------------------------------------------------- #
 
     # ------------------ NOTE GENERATION  ------------------ #
+    # Load the model
+    groovae_2bar_tap = TrainedModel(config=configs.CONFIG_MAP['groovae_2bar_tap_fixed_velocity'],
+                                    batch_size=1,
+                                    checkpoint_dir_or_path=GROOVAE_2BAR_TAP_FIXED_VELOCITY)    
     
     while (quitFlag[0] is False):
         server.handle_request()
+
+
+
+
+        #max_array=max_to_NN_to_max(max_lst, BPM, model)
 
         # 1. generate a random pitched note with the provided received value
         pitch = int(random.randrange(40, 52))       # 1 octave
