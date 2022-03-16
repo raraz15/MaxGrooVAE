@@ -133,8 +133,7 @@ def NN_output_to_Max(h, BPM, pre_quantization=False, beat_quantization_division=
     return midi_array  
 
 def max_to_NN_to_max(max_lst, BPM, model):
-    midi_array=max_list_to_midi_array(max_lst, BPM)
-    len(midi_array)
+    midi_array=max_str_to_midi_array(max_lst, BPM)
     # Convert it into the pre-NN input format
     note_sequence=make_tap_sequence(midi_array, BPM)
     note_sequence=quantize(note_sequence)
@@ -148,4 +147,4 @@ def max_to_NN_to_max(max_lst, BPM, model):
     assert BPM==h.tempos[0].qpm, 'Tempo conversion failed at NN creation'
     # Convert to Max array
     MAX_array=NN_output_to_Max(h, BPM, beat_quantization_division=64)
-    return MAX_array           
+    return MAX_array
