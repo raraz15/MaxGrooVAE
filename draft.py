@@ -1,8 +1,15 @@
 #dc_quantize = configs.CONFIG_MAP['groovae_2bar_humanize'].data_converter
 
-def is_4_4(s):
-    ts = s.time_signatures[0]
-    return (ts.numerator == 4 and ts.denominator ==4)
+# Calculate how far off the beat a note is
+def get_offset(s, note_index):
+    q_s = flatten_quantization(quantize(s))
+    true_onset = s.notes[note_index].start_time
+    quantized_onset = q_s.notes[note_index].start_time
+    diff = quantized_onset - true_onset
+    beat_length = 60. / s.tempos[0].qpm
+    step_length = beat_length / 4#q_s.quantization_info.steps_per_quarter
+    offset = diff/step_length
+    return offset 
 
 def preprocess_2bar(s):
     return dc_quantize.from_tensors(dc_quantize.to_tensors(s).outputs)[0]
