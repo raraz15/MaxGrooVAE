@@ -10,7 +10,12 @@ from magenta.models.music_vae import configs
 dc_tap = configs.CONFIG_MAP['groovae_2bar_tap_fixed_velocity'].data_converter
 model_config=configs.CONFIG_MAP['groovae_2bar_tap_fixed_velocity']
 model_weights_path="groovae_2bar_tap_fixed_velocity.tar"
-VELOCITY=85
+
+N_BARS=2
+BEATS_PER_BAR=4
+STEPS_PER_QUARTER_NOTE=4
+N_STEPS=N_BARS*BEATS_PER_BAR*STEPS_PER_QUARTER_NOTE
+VELOCITY=85 # Fixed Value
 
 
 # If a sequence has notes at time before 0.0, scootch them up to 0
@@ -86,13 +91,13 @@ def get_tapped_2bar(s, velocity=VELOCITY, ride=False):
 
 def drumify(s, model, temperature=0.5):
     encoding, mu, sigma = model.encode([s])
-    decoded = model.decode(encoding, length=32, temperature=temperature)
+    decoded = model.decode(encoding, length=N_STEPS, temperature=temperature)
     return decoded[0]    
 
-def max_str_to_midi_array(max_str, BPM, n_bars=2, n_steps_per_quarter_note=4):
+def max_str_to_midi_array(max_str, BPM):
     """max_list timing are in bars. Assumes 4/4 timing"""
     max_str=max_str.split(' ')
-    assert len(max_str)==3*(n_bars*4*n_steps_per_quarter_note), 'List length wrong!'
+    assert len(max_str)==3*N_STEPS, 'List length wrong!'
     beat_dur=60/BPM # in sec
     midi_array=[]
     for i in range((len(max_str)//3)):
@@ -109,7 +114,7 @@ def make_tap_sequence(midi_array, BPM, velocity=VELOCITY, tpq=480):
     note_sequence=music_pb2.NoteSequence()
     note_sequence.tempos.add(qpm=BPM)
     note_sequence.ticks_per_quarter=tpq
-    note_sequence.time_signatures.add(numerator=4, denominator=4)
+    note_sequence.time_signatures.add(numerator=BEATS_PER_BAR, denominator=4)
     note_sequence.key_signatures.add()
     for onset_time, offset_time, onset_velocity in midi_array:
         if onset_velocity: # Non-zero velocity notes only
@@ -119,7 +124,7 @@ def make_tap_sequence(midi_array, BPM, velocity=VELOCITY, tpq=480):
                                     velocity=velocity,
                                     start_time=onset_time,
                                     end_time=offset_time)
-    note_sequence.total_time=2*4*(60/BPM) # 2bars
+    note_sequence.total_time=N_BARS*BEATS_PER_BAR*(60/BPM) # 2bars
     return note_sequence 
 
 def NN_output_to_Max(h, BPM, pre_quantization=False, beat_quantization_division=1):
