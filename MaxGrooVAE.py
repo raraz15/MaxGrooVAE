@@ -19,8 +19,8 @@ drum_voices = list(drum_voice_pitch_map.keys())
 if __name__ == '__main__':
 
     # Lists for storing received values
-    groove = ['']
-    BPM = ['0 5 120']
+    groove = ['0.0000 0.0300 120.0000 0.0625 0.0925 0.0000 0.1250 0.1550 0.0000 0.1875 0.2175 0.0000 0.2500 0.2800 120.0000 0.3125 0.3425 0.0000 0.3750 0.4050 0.0000 0.4375 0.4675 0.0000 0.5000 0.5300 120.0000 0.5625 0.5925 0.0000 0.6250 0.6550 0.0000 0.6875 0.7175 0.0000 0.7500 0.7800 120.0000 0.8125 0.8425 0.0000 0.8750 0.9050 0.0000 0.9375 0.9675 0.0000 1.0000 1.0300 120.0000 1.0625 1.0925 0.0000 1.1250 1.1550 0.0000 1.1875 1.2175 0.0000 1.2500 1.2800 120.0000 1.3125 1.3425 0.0000 1.3750 1.4050 0.0000 1.4375 1.4675 0.0000 1.5000 1.5300 120.0000 1.5625 1.5925 0.0000 1.6250 1.6550 0.0000 1.6875 1.7175 0.0000 1.7500 1.7800 120.0000 1.8125 1.8425 0.0000 1.8750 1.9050 0.0000 1.9375 1.9675 0.0000']
+    BPM = [120]
     quitFlag = [False]
 
     # ------------------ OSC Receiver from Pd ------------------ #
@@ -68,11 +68,7 @@ if __name__ == '__main__':
     while (quitFlag[0] is False):
         server.handle_request()
 
-        midi_array=max_str_to_midi_array(groove[0], BPM[0])
-        print(midi_array)
-        #output=max_to_NN_to_max(groove[0], BPM[0], groovae_2bar_tap)
-        #print(output)
-        #
+        output=max_to_NN_to_max(groove[0], BPM[0], groovae_2bar_tap)
 
         # 3. Send Notes to pd (send pitch last to ensure syncing)
         #py_to_pd_OscSender.send_message("/gamelan/velocity_duration", (velocity, duration))

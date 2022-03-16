@@ -118,21 +118,8 @@ def quantize_to_beat_divisions(beat, division=32):
     else: # do not quantize
         return beat
 
-def NN_output_to_Max(h, BPM, pre_quantization=False, beat_quantization_division=1):
-    """Return in [beats, beats, velocity, pitch]"""
-    _h=copy.deepcopy(h)
-    beat_dur=60/BPM
-    if pre_quantization:
-        _h=quantize(_h)
-    midi_array=[]
-    for note in _h.notes:
-        start=quantize_to_beat_divisions(note.start_time/beat_dur, beat_quantization_division)
-        dur=quantize_to_beat_divisions((note.end_time-note.start_time)/beat_dur, beat_quantization_division)
-        midi_array.append([start, dur, note.velocity, note.pitch])
-    midi_array=np.array(midi_array)
-    return midi_array  
-
 def max_to_NN_to_max(max_lst, BPM, model):
+    # List to array
     midi_array=max_str_to_midi_array(max_lst, BPM)
     # Convert it into the pre-NN input format
     note_sequence=make_tap_sequence(midi_array, BPM)
@@ -147,4 +134,18 @@ def max_to_NN_to_max(max_lst, BPM, model):
     assert BPM==h.tempos[0].qpm, 'Tempo conversion failed at NN creation'
     # Convert to Max array
     MAX_array=NN_output_to_Max(h, BPM, beat_quantization_division=64)
-    return MAX_array
+    return MAX_array        
+
+def NN_output_to_Max(h, BPM, pre_quantization=False, beat_quantization_division=1):
+    """Return in [beats, beats, velocity, pitch]"""
+    _h=copy.deepcopy(h)
+    beat_dur=60/BPM
+    if pre_quantization:
+        _h=quantize(_h)
+    midi_array=[]
+    for note in _h.notes:
+        start=quantize_to_beat_divisions(note.start_time/beat_dur, beat_quantization_division)
+        dur=quantize_to_beat_divisions((note.end_time-note.start_time)/beat_dur, beat_quantization_division)
+        midi_array.append([start, dur, note.velocity, note.pitch])
+    midi_array=np.array(midi_array)
+    return midi_array  
