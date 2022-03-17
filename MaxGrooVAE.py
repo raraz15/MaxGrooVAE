@@ -16,6 +16,7 @@ SEND_IP= "192.168.29.72" #"192.168.235.72"
 receiving_from_pd_port = 5000
 sending_to_pd_port = 6000
 
+DRUMS={36: 'Kick', 38: 'Snare (Head)', 42: 'HH Closed (Bow)', 46: 'HH Open (Bow)'}
 
 def BPM_groove_handler(address, *args):
     """Takes a space separated string, parses it to BPM, Groove and composes a drum loop."""
@@ -25,6 +26,7 @@ def BPM_groove_handler(address, *args):
     groove[0]=' '.join(inp_message[1:]) # workaround osc
     # Get the NN composition
     output=max_to_NN_to_max(groove[0], BPM[0], groovae_2bar_tap, temperature=T[0])
+    print([DRUMS[n] for n in list(output.keys())])
     for drum,array in output.items():
         message=' '.join([str(v) for v in array]) # Cast it to str
         py_to_pd_OscSender.send_message(f"/pattern/{drum}", message)
@@ -32,7 +34,7 @@ def BPM_groove_handler(address, *args):
 
 def temperature_handler(address, *args):
     T[0]=args[0]
-    print(f'\nTemperature change. Setting to: {T[0]}')
+    #print(f'\nTemperature change. Setting to: {T[0]}')
 
 # define the handler for quit message message
 def quit_message_handler(address, *args):
@@ -77,6 +79,5 @@ if __name__ == '__main__':
     print('Listening...')
 
     # ------------------- Communication - Processing ------------ #
-
     while (quitFlag[0] is False):
         server.handle_request()
