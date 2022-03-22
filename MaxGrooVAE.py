@@ -16,7 +16,7 @@ N_COMPOSITIONS=4
 RECEIVE_IP =  "192.168.109.19"
 SEND_IP= "192.168.109.72"
 receiving_from_pd_port = 5000
-sending_to_pd_port = 7000
+sending_to_pd_port = 6500
 
 DRUMS={36: 'Kick',
        38: 'Snare (Head)',
@@ -35,14 +35,13 @@ def BPM_groove_handler(address, *args):
     inp_message=args[0].split(' ') # First value is the BPM, rest is the groove
     BPM[0]=float(inp_message[0])
     groove[0]=' '.join(inp_message[1:]) # workaround osc
-    # Get the NN composition
-    for i in range(N_COMPOSITIONS):
-        # Get a message for each drum
-        messages=max_to_NN_to_max(groove[0], BPM[0], groovae_2bar_tap, temperature=T[0])
-        for drum,msg in messages.items():
-            py_to_pd_OscSender.send_message(f"/pattern/{i}/{drum}", msg)
-        print(f"{i}: {[DRUMS[n] for n in list(messages.keys())]}")
-    print('Sent the Drum Composition.')
+    # Get N_COMPOSITIONS drum compositions in Max readable format
+    messages=max_to_NN_to_max(groove[0], BPM[0], groovae_2bar_tap, temperature=T[0], N=N_COMPOSITIONS)
+    for i,msg in enumerate(messages):
+        for drum,max_str in msg.items():
+            py_to_pd_OscSender.send_message(f"/pattern/{i}/{drum}", max_str)
+        print(f"{i}: {[DRUMS[n] for n in list(msg.keys())]}")
+    print('Sent all the Drum Compositions.')
 
 def temperature_handler(address, *args):
     T[0]=args[0]

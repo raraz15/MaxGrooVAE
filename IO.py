@@ -89,10 +89,10 @@ def get_tapped_2bar(s, velocity=VELOCITY, ride=False):
             n.pitch = 42
     return new_s
 
-def drumify(s, model, temperature=0.5):
-    encoding, mu, sigma = model.encode([s])
+def drumify(s, model, temperature=0.5, N=1):
+    encoding, mu, sigma = model.encode([s]*N)
     decoded = model.decode(encoding, length=N_STEPS, temperature=temperature)
-    return decoded[0]    
+    return decoded    
 
 def max_str_to_midi_array(max_str, BPM):
     """max_list timing are in bars. Assumes 4/4 timing"""
@@ -141,12 +141,12 @@ def NN_output_to_Max(h, BPM, pre_quantization=False, beat_quantization_division=
         end=int(end_beat*1000)
         midi_arrays[note.pitch][start:end]=note.velocity
     # Cast it to str for Max
-    messages={drum: ' '.join([str(v) for v in array]) for drum,array in midi_arrays.items()}
-    return messages
+    drum_messages={drum: ' '.join([str(v) for v in array]) for drum,array in midi_arrays.items()}
+    return drum_messages
 
-# TODO: take beat_quantization_division 
-def max_to_NN_to_max(max_lst, BPM, model, temperature=1.0, beat_quantization_division=64):
-    """takes a max list, gets NN output and puts them in a Max readable format."""
+# TODO: take beat_quantization_division
+def max_to_NN_to_max(max_lst, BPM, model, temperature=1.0, beat_quantization_division=64, N=1):
+    """takes a max list, gets N NN outputs and puts them in a Max readable format."""
     # List to array
     midi_array=max_str_to_midi_array(max_lst, BPM)
     # Convert it into the pre-NN input format
@@ -157,9 +157,14 @@ def max_to_NN_to_max(max_lst, BPM, model, temperature=1.0, beat_quantization_div
     note_sequence=start_notes_at_0(note_sequence)
     note_sequence=change_tempo(get_tapped_2bar(note_sequence, velocity=VELOCITY, ride=True), BPM)
     assert BPM==note_sequence.tempos[0].qpm, 'Tempo conversion failed at tapped bar creation'
-    # Get NN prediction
-    h=change_tempo(drumify(note_sequence, model, temperature=temperature), BPM)
-    assert BPM==h.tempos[0].qpm, 'Tempo conversion failed at NN creation'
-    # Convert to Max messages
-    messages=NN_output_to_Max(h, BPM, beat_quantization_division=beat_quantization_division)
-    return messages      
+    # Get N Drum compositions in Note Sequence formats
+    compositions=drumify(note_sequence, model, temperature=temperature, N=N)
+    # Inherited from Magenta don't know why
+    compositions=[change_tempo(comp, BPM) for comp in compositions]
+    # Convert each composition into a dict containing Max readable drum messages
+    messages=[]
+    for h in compositions:
+        assert BPM==h.tempos[0].qpm, 'Tempo conversion failed at NN creation'
+        # Convert to Max messages
+        messages.append(NN_output_to_Max(h, BPM, beat_quantization_division=beat_quantization_division))
+    return messages 
