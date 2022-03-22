@@ -140,7 +140,8 @@ def NN_output_to_Max(h, BPM, pre_quantization=False, beat_quantization_division=
         start=int(start_beat*1000)
         end=int(end_beat*1000)
         midi_arrays[note.pitch][start:end]=note.velocity
-    return midi_arrays
+    messages={drum: ' '.join([str(v) for v in array]) for drum,array in midi_arrays.items()} # Cast it to str for Max
+    return messages
 
 # TODO: take beat_quantization_division 
 def max_to_NN_to_max(max_lst, BPM, model, temperature=1.0, beat_quantization_division=64):
