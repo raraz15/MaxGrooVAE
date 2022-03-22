@@ -13,14 +13,17 @@ from IO import max_to_NN_to_max, model_weights_path, model_config
 
 # TODO: read the init groove
 
-N_COMPOSITIONS=4
+N_COMPOSITIONS=4 # Get N_COMPOSITIONS at a time for each groove
+INIT_BPM=120
+INIT_TEMP=1.0
 
-# connection parameters
-RECEIVE_IP =  "192.168.109.19"
-SEND_IP= "192.168.109.72"
-receiving_from_pd_port = 5000
-sending_to_pd_port = 8000
+# Default connection parameters
+RECEIVE_IP="192.168.109.19"
+SEND_IP="192.168.109.72"
+receiving_from_pd_port=5000
+sending_to_pd_port=8000
 
+# DRUM dict from https://magenta.tensorflow.org/datasets/groove
 DRUMS={36: 'Kick',
        38: 'Snare (Head)',
        42: 'HH Closed (Bow)',
@@ -71,15 +74,14 @@ if __name__ == '__main__':
 
     # Lists for storing received values
     groove = ['0.0000 0.0300 120.0000 0.0625 0.0925 0.0000 0.1250 0.1550 0.0000 0.1875 0.2175 0.0000 0.2500 0.2800 120.0000 0.3125 0.3425 0.0000 0.3750 0.4050 0.0000 0.4375 0.4675 0.0000 0.5000 0.5300 120.0000 0.5625 0.5925 0.0000 0.6250 0.6550 0.0000 0.6875 0.7175 0.0000 0.7500 0.7800 120.0000 0.8125 0.8425 0.0000 0.8750 0.9050 0.0000 0.9375 0.9675 0.0000 1.0000 1.0300 120.0000 1.0625 1.0925 0.0000 1.1250 1.1550 0.0000 1.1875 1.2175 0.0000 1.2500 1.2800 120.0000 1.3125 1.3425 0.0000 1.3750 1.4050 0.0000 1.4375 1.4675 0.0000 1.5000 1.5300 120.0000 1.5625 1.5925 0.0000 1.6250 1.6550 0.0000 1.6875 1.7175 0.0000 1.7500 1.7800 120.0000 1.8125 1.8425 0.0000 1.8750 1.9050 0.0000 1.9375 1.9675 0.0000']
-    BPM = [120]
-    quitFlag = [False]
-    output=[]
-    T=[1.0]
+    BPM=[INIT_BPM]
+    quitFlag=[False]
+    T=[INIT_TEMP]
 
-    # create an instance of the osc_sender class
+    # ------------------ OSC Sender tp Max ---------------------- #
     py_to_pd_OscSender = SimpleUDPClient(args.send_ip, args.send_port)
 
-    # ------------------ OSC Receiver from Pd ------------------ #
+    # ------------------ OSC Receiver from Max ------------------ #
     # dispatcher is used to assign a callback to a received osc message
     # in other words the dispatcher routes the osc message to the right action using the address provided
     dispatcher = Dispatcher()
@@ -101,7 +103,7 @@ if __name__ == '__main__':
     print('Done!')
     print('Listening...')
     print(f'   Send IP: {args.send_ip} Port: {args.send_port}')
-    print(f'Receive IP: {args.receive_ip} Port: {args.send_port}')
+    print(f'Receive IP: {args.receive_ip} Port: {args.receive_port}')
 
     # ------------------- Communication - Processing ------------ #
     while (quitFlag[0] is False):
