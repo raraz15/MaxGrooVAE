@@ -10,6 +10,8 @@ from magenta.models.music_vae.trained_model import TrainedModel
 
 from IO import max_to_NN_to_max, model_weights_path, model_config
 
+# TODO: read the init groove
+
 N_COMPOSITIONS=4
 
 # connection parameters
