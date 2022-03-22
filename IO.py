@@ -1,13 +1,11 @@
+# Most of the methods here are integrated for our purposes from https://goo.gl/magenta/groovae-colab
 import copy
 from collections import defaultdict
-
-from attr import has
 
 import numpy as np
 
 import note_seq
 from note_seq.protobuf import music_pb2
-
 from magenta.models.music_vae import configs
 
 dc_tap = configs.CONFIG_MAP['groovae_2bar_tap_fixed_velocity'].data_converter
@@ -148,8 +146,8 @@ def NN_output_to_Max(h, BPM, pre_quantization=False, beat_quantization_division=
         start=int(1000*start_beat) # Convert to this format for Max
         duration=int(1000*(end_beat-start_beat))
         midi_lists[note.pitch].extend([start,duration,note.velocity])
-    # Cast all drums to a single space separated string for Max
-    drum_messages={drum: ' '.join([str(v) for v in array]) for drum,array in midi_lists.items()}
+    # Cast all drums to a single space separated string for Max, sort for pretty print
+    drum_messages=sort_dict_by_key({drum: ' '.join([str(v) for v in array]) for drum,array in midi_lists.items()})
     return drum_messages
 
 # TODO: take beat_quantization_division
@@ -175,4 +173,7 @@ def max_to_NN_to_max(max_lst, BPM, model, temperature=1.0, beat_quantization_div
         assert BPM==h.tempos[0].qpm, 'Tempo conversion failed at NN creation'
         # Convert to Max messages
         messages.append(NN_output_to_Max(h, BPM, beat_quantization_division=beat_quantization_division))
-    return messages 
+    return messages
+
+def sort_dict_by_key(dct):
+    return {k:dct[k] for k in sorted(dct.keys())}    
