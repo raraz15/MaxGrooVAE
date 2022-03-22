@@ -39,9 +39,9 @@ def BPM_groove_handler(address, *args):
     for i in range(N_COMPOSITIONS):
         # Get a message for each drum
         messages=max_to_NN_to_max(groove[0], BPM[0], groovae_2bar_tap, temperature=T[0])
-        print(f"{i}: {[DRUMS[n] for n in list(messages.keys())]}")
         for drum,msg in messages.items():
             py_to_pd_OscSender.send_message(f"/pattern/{i}/{drum}", msg)
+        print(f"{i}: {[DRUMS[n] for n in list(messages.keys())]}")
     print('Sent the Drum Composition.')
 
 def temperature_handler(address, *args):
