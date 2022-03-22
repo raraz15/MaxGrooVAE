@@ -44,6 +44,7 @@ def BPM_groove_handler(address, *args):
         for drum,max_str in msg.items():
             py_to_pd_OscSender.send_message(f"/pattern/{i}/{drum}", max_str) 
         print(f"{i}: {[DRUMS[n] for n in list(msg.keys())]}")
+    py_to_pd_OscSender.send_message("/flag", 1) # Let Max know the transmission is complete
     print('Sent all the Compositions.')
 
 def temperature_handler(address, *args):
