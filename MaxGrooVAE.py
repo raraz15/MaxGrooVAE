@@ -37,9 +37,10 @@ def BPM_groove_handler(address, *args):
     groove[0]=' '.join(inp_message[1:]) # workaround osc
     # Get N_COMPOSITIONS drum compositions in Max readable format
     messages=max_to_NN_to_max(groove[0], BPM[0], groovae_2bar_tap, temperature=T[0], N=N_COMPOSITIONS)
+    # Send to Max by /composition/drum/
     for i,msg in enumerate(messages):       
         for drum,max_str in msg.items():
-            py_to_pd_OscSender.send_message(f"/pattern/{i}/{drum}", max_str)
+            py_to_pd_OscSender.send_message(f"/pattern/{i}/{drum}", max_str) 
         print(f"{i}: {[DRUMS[n] for n in list(msg.keys())]}")
     print('Sent all the Drum Compositions.')
 

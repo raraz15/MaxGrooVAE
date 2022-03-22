@@ -137,14 +137,14 @@ def NN_output_to_Max(h, BPM, pre_quantization=False, beat_quantization_division=
         _h=quantize(_h)
     midi_lists=defaultdict(list)
     for note in _h.notes:
-        #assert note.start_time>0, 'Start time negative received!'
-        #assert note.end_time>0, 'End time negative received!'
-        #assert note.end_time>note.start_time, 'End time before start time!'
+        assert note.start_time>=0, f'Negative Start time received from NN! {note.start_time}'
+        assert note.end_time>=0, f'Negative End time received from NN! {note.end_time}'
+        assert note.end_time>note.start_time, 'End time before start time from NN!'
         start_beat=quantize_to_beat_divisions(note.start_time/beat_dur, beat_quantization_division)
         end_beat=quantize_to_beat_divisions(note.end_time/beat_dur, beat_quantization_division)
-        #assert start_beat>0, 'Start beat quantized wrongly!'
-        #assert end_beat>0, 'End beat quantized wrongly!'
-        #assert end_beat>start_beat, 'Duration quantized wrongly.'
+        assert start_beat>=0, f'Start beat quantized wrongly! {start_beat}'
+        assert end_beat>=0, f'End beat quantized wrongly! {end_beat}'
+        assert end_beat>start_beat, 'Duration quantized wrongly.'
         start=int(1000*start_beat) # Convert to this format for Max
         duration=int(1000*(end_beat-start_beat))
         midi_lists[note.pitch].extend([start,duration,note.velocity])
@@ -170,6 +170,7 @@ def max_to_NN_to_max(max_lst, BPM, model, temperature=1.0, beat_quantization_div
     # Convert each composition into a dict containing Max readable drum messages
     messages=[]
     for h in compositions:
+        h=start_notes_at_0(h) # remove negative timings
         h=change_tempo(h, BPM) # Inherited from Magenta don't know why
         assert BPM==h.tempos[0].qpm, 'Tempo conversion failed at NN creation'
         # Convert to Max messages
