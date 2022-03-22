@@ -10,27 +10,41 @@ from magenta.models.music_vae.trained_model import TrainedModel
 
 from IO import max_to_NN_to_max, model_weights_path, model_config
 
-# connection parameters
-RECEIVE_IP =  "192.168.29.19" #"192.168.235.19"
-SEND_IP= "192.168.29.72" #"192.168.235.72"
-receiving_from_pd_port = 5000
-sending_to_pd_port = 6000
+# TODO: read the init groove
 
-DRUMS={36: 'Kick', 38: 'Snare (Head)', 42: 'HH Closed (Bow)', 46: 'HH Open (Bow)'}
+N_COMPOSITIONS=4
+
+# connection parameters
+RECEIVE_IP =  "192.168.109.19"
+SEND_IP= "192.168.109.72"
+receiving_from_pd_port = 5000
+sending_to_pd_port = 6500
+
+DRUMS={36: 'Kick',
+       38: 'Snare (Head)',
+       42: 'HH Closed (Bow)',
+       45: "Tom 2",
+       46: 'HH Open (Bow)',
+       48: "Tom 1",
+       49: 'Crash 1 (Bow)',
+       50: "Tom 1 (Rim)",
+       51: "Ride (Bow)"
+       }
 
 def BPM_groove_handler(address, *args):
     """Takes a space separated string, parses it to BPM, Groove and composes a drum loop."""
-    print('\nGroove Received. Composing...')
+    print('\nGroove Received with Temperature {:.2f}.\nComposing...'.format(T[0]))
     inp_message=args[0].split(' ') # First value is the BPM, rest is the groove
     BPM[0]=float(inp_message[0])
     groove[0]=' '.join(inp_message[1:]) # workaround osc
-    # Get the NN composition
-    output=max_to_NN_to_max(groove[0], BPM[0], groovae_2bar_tap, temperature=T[0])
-    print([DRUMS[n] for n in list(output.keys())])
-    for drum,array in output.items():
-        message=' '.join([str(v) for v in array]) # Cast it to str
-        py_to_pd_OscSender.send_message(f"/pattern/{drum}", message)
-    print('Sent the Drum Composition.')
+    # Get N_COMPOSITIONS drum compositions in Max readable format
+    messages=max_to_NN_to_max(groove[0], BPM[0], groovae_2bar_tap, temperature=T[0], N=N_COMPOSITIONS)
+    # Send to Max by /composition/drum/
+    for i,msg in enumerate(messages):       
+        for drum,max_str in msg.items():
+            py_to_pd_OscSender.send_message(f"/pattern/{i}/{drum}", max_str) 
+        print(f"{i}: {[DRUMS[n] for n in list(msg.keys())]}")
+    print('Sent all the Compositions.')
 
 def temperature_handler(address, *args):
     T[0]=args[0]
@@ -73,7 +87,7 @@ if __name__ == '__main__':
     # Load the model
     print('\nLoading the model...')
     groovae_2bar_tap = TrainedModel(config=model_config,
-                                    batch_size=1,
+                                    batch_size=N_COMPOSITIONS,
                                     checkpoint_dir_or_path=model_weights_path)      
     print('Done!')
     print('Listening...')
