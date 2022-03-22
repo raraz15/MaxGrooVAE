@@ -42,7 +42,6 @@ def BPM_groove_handler(address, *args):
         print(f"{i}: {[DRUMS[n] for n in list(messages.keys())]}")
         for drum,msg in messages.items():
             py_to_pd_OscSender.send_message(f"/pattern/{i}/{drum}", msg)
-        #del output # DELETE
     print('Sent the Drum Composition.')
 
 def temperature_handler(address, *args):

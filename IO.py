@@ -128,7 +128,7 @@ def make_tap_sequence(midi_array, BPM, velocity=VELOCITY, tpq=220):
     return note_sequence 
 
 def NN_output_to_Max(h, BPM, pre_quantization=False, beat_quantization_division=1):
-    """Return in [start_beat, duration_in_beats, velocity, pitch]"""
+    """Return a dict of {'drum': max_string} where a max_string is the velocities appended one after other."""
     _h=copy.deepcopy(h)
     beat_dur=60/BPM
     if pre_quantization:
@@ -140,12 +140,13 @@ def NN_output_to_Max(h, BPM, pre_quantization=False, beat_quantization_division=
         start=int(start_beat*1000)
         end=int(end_beat*1000)
         midi_arrays[note.pitch][start:end]=note.velocity
-    messages={drum: ' '.join([str(v) for v in array]) for drum,array in midi_arrays.items()} # Cast it to str for Max
+    # Cast it to str for Max
+    messages={drum: ' '.join([str(v) for v in array]) for drum,array in midi_arrays.items()}
     return messages
 
 # TODO: take beat_quantization_division 
 def max_to_NN_to_max(max_lst, BPM, model, temperature=1.0, beat_quantization_division=64):
-    """takes a max list, gets NN output and puts it in Max readable format."""
+    """takes a max list, gets NN output and puts them in a Max readable format."""
     # List to array
     midi_array=max_str_to_midi_array(max_lst, BPM)
     # Convert it into the pre-NN input format
@@ -159,6 +160,6 @@ def max_to_NN_to_max(max_lst, BPM, model, temperature=1.0, beat_quantization_div
     # Get NN prediction
     h=change_tempo(drumify(note_sequence, model, temperature=temperature), BPM)
     assert BPM==h.tempos[0].qpm, 'Tempo conversion failed at NN creation'
-    # Convert to Max array
-    MAX_array=NN_output_to_Max(h, BPM, beat_quantization_division=beat_quantization_division)
-    return MAX_array      
+    # Convert to Max messages
+    messages=NN_output_to_Max(h, BPM, beat_quantization_division=beat_quantization_division)
+    return messages      
