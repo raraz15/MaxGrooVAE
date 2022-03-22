@@ -130,7 +130,7 @@ def make_tap_sequence(midi_array, BPM, velocity=VELOCITY, tpq=220):
     return note_sequence 
 
 def NN_output_to_Max(h, BPM, pre_quantization=False, beat_quantization_division=1):
-    """Return a dict of {'drum': max_string} where a max_string is the velocities appended one after other."""
+    """Return a dict of {'drum': max_string} where a max_string is a concatenation of [start, duration, velocity]."""
     _h=copy.deepcopy(h)
     beat_dur=60/BPM
     if pre_quantization:
