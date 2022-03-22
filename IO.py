@@ -1,6 +1,8 @@
 import copy
 from collections import defaultdict
 
+from attr import has
+
 import numpy as np
 
 import note_seq
@@ -74,7 +76,7 @@ def quantize_to_beat_divisions(beat, division=32):
     if division!=1: 
         return (beat//(1/division))*(1/division)
     else: # do not quantize
-        return beat    
+        return beat
 
 
 # quick method for turning a drumbeat into a tapped rhythm
@@ -90,7 +92,7 @@ def get_tapped_2bar(s, velocity=VELOCITY, ride=False):
     return new_s
 
 def drumify(s, model, temperature=0.5, N=1):
-    encoding, mu, sigma = model.encode([s]*N)
+    encoding, mu, sigma = model.encode([s]*N) # Repeat the groove N times
     decoded = model.decode(encoding, length=N_STEPS, temperature=temperature)
     return decoded    
 
@@ -133,15 +135,21 @@ def NN_output_to_Max(h, BPM, pre_quantization=False, beat_quantization_division=
     beat_dur=60/BPM
     if pre_quantization:
         _h=quantize(_h)
-    midi_arrays=defaultdict(lambda: np.zeros(N_BARS*BEATS_PER_BAR*1000)) # embed the velocities
+    midi_lists=defaultdict(list)
     for note in _h.notes:
+        #assert note.start_time>0, 'Start time negative received!'
+        #assert note.end_time>0, 'End time negative received!'
+        #assert note.end_time>note.start_time, 'End time before start time!'
         start_beat=quantize_to_beat_divisions(note.start_time/beat_dur, beat_quantization_division)
-        end_beat=quantize_to_beat_divisions(note.end_time/beat_dur, beat_quantization_division)      
-        start=int(start_beat*1000)
-        end=int(end_beat*1000)
-        midi_arrays[note.pitch][start:end]=note.velocity
-    # Cast it to str for Max
-    drum_messages={drum: ' '.join([str(v) for v in array]) for drum,array in midi_arrays.items()}
+        end_beat=quantize_to_beat_divisions(note.end_time/beat_dur, beat_quantization_division)
+        #assert start_beat>0, 'Start beat quantized wrongly!'
+        #assert end_beat>0, 'End beat quantized wrongly!'
+        #assert end_beat>start_beat, 'Duration quantized wrongly.'
+        start=int(1000*start_beat) # Convert to this format for Max
+        duration=int(1000*(end_beat-start_beat))
+        midi_lists[note.pitch].extend([start,duration,note.velocity])
+    # Cast all drums to a single space separated string for Max
+    drum_messages={drum: ' '.join([str(v) for v in array]) for drum,array in midi_lists.items()}
     return drum_messages
 
 # TODO: take beat_quantization_division
@@ -159,11 +167,10 @@ def max_to_NN_to_max(max_lst, BPM, model, temperature=1.0, beat_quantization_div
     assert BPM==note_sequence.tempos[0].qpm, 'Tempo conversion failed at tapped bar creation'
     # Get N Drum compositions in Note Sequence formats
     compositions=drumify(note_sequence, model, temperature=temperature, N=N)
-    # Inherited from Magenta don't know why
-    compositions=[change_tempo(comp, BPM) for comp in compositions]
     # Convert each composition into a dict containing Max readable drum messages
     messages=[]
     for h in compositions:
+        h=change_tempo(h, BPM) # Inherited from Magenta don't know why
         assert BPM==h.tempos[0].qpm, 'Tempo conversion failed at NN creation'
         # Convert to Max messages
         messages.append(NN_output_to_Max(h, BPM, beat_quantization_division=beat_quantization_division))
