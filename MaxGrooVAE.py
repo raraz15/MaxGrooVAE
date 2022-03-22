@@ -10,13 +10,15 @@ from magenta.models.music_vae.trained_model import TrainedModel
 
 from IO import max_to_NN_to_max, model_weights_path, model_config
 
-# connection parameters
-RECEIVE_IP =  "192.168.29.19" #"192.168.235.19"
-SEND_IP= "192.168.29.72" #"192.168.235.72"
-receiving_from_pd_port = 5000
-sending_to_pd_port = 6000
+N_COMPOSITIONS=4
 
-DRUMS={36: 'Kick', 38: 'Snare (Head)', 42: 'HH Closed (Bow)', 46: 'HH Open (Bow)'}
+# connection parameters
+RECEIVE_IP =  "192.168.109.19"
+SEND_IP= "192.168.109.72"
+receiving_from_pd_port = 5000
+sending_to_pd_port = 7000
+
+DRUMS={36: 'Kick', 38: 'Snare (Head)', 42: 'HH Closed (Bow)', 46: 'HH Open (Bow)', 48: "Tom 1", 49: 'Crash 1 (Bow)', 50: "Tom 1 (Rim)", 51: "Ride (Bow)"}
 
 def BPM_groove_handler(address, *args):
     """Takes a space separated string, parses it to BPM, Groove and composes a drum loop."""
@@ -25,16 +27,18 @@ def BPM_groove_handler(address, *args):
     BPM[0]=float(inp_message[0])
     groove[0]=' '.join(inp_message[1:]) # workaround osc
     # Get the NN composition
-    output=max_to_NN_to_max(groove[0], BPM[0], groovae_2bar_tap, temperature=T[0])
-    print([DRUMS[n] for n in list(output.keys())])
-    for drum,array in output.items():
-        message=' '.join([str(v) for v in array]) # Cast it to str
-        py_to_pd_OscSender.send_message(f"/pattern/{drum}", message)
+    for i in range(N_COMPOSITIONS):
+        output=max_to_NN_to_max(groove[0], BPM[0], groovae_2bar_tap, temperature=T[0])
+        print(f"{i}: {[DRUMS[n] for n in list(output.keys())]}")
+        for drum,array in output.items():
+            message=' '.join([str(v) for v in array]) # Cast it to str # TODO: do in the method
+            #print(message)
+            py_to_pd_OscSender.send_message(f"/pattern/{i}/{drum}", message)
     print('Sent the Drum Composition.')
 
 def temperature_handler(address, *args):
     T[0]=args[0]
-    #print(f'\nTemperature change. Setting to: {T[0]}')
+    print(f'\nTemperature change. Setting to: {T[0]}')
 
 # define the handler for quit message message
 def quit_message_handler(address, *args):
@@ -73,7 +77,7 @@ if __name__ == '__main__':
     # Load the model
     print('\nLoading the model...')
     groovae_2bar_tap = TrainedModel(config=model_config,
-                                    batch_size=1,
+                                    batch_size=N_COMPOSITIONS,
                                     checkpoint_dir_or_path=model_weights_path)      
     print('Done!')
     print('Listening...')
