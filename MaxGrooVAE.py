@@ -31,7 +31,7 @@ DRUMS={36: 'Kick',
 
 def BPM_groove_handler(address, *args):
     """Takes a space separated string, parses it to BPM, Groove and composes a drum loop."""
-    print('\nGroove Received. Composing...')
+    print('\nGroove Received with Temperature {:.2f}.\nComposing...'.format(T[0]))
     inp_message=args[0].split(' ') # First value is the BPM, rest is the groove
     BPM[0]=float(inp_message[0])
     groove[0]=' '.join(inp_message[1:]) # workaround osc
@@ -42,11 +42,11 @@ def BPM_groove_handler(address, *args):
         for drum,max_str in msg.items():
             py_to_pd_OscSender.send_message(f"/pattern/{i}/{drum}", max_str) 
         print(f"{i}: {[DRUMS[n] for n in list(msg.keys())]}")
-    print('Sent all the Drum Compositions.')
+    print('Sent all the Compositions.')
 
 def temperature_handler(address, *args):
     T[0]=args[0]
-    print(f'\nTemperature change. Setting to: {T[0]}')
+    #print(f'\nTemperature change. Setting to: {T[0]}')
 
 # define the handler for quit message message
 def quit_message_handler(address, *args):
