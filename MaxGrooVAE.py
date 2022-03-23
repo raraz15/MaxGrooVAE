@@ -1,4 +1,5 @@
 # Adapted from https://github.com/behzadhaki/CMC_SMC
+import time
 import argparse
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -38,19 +39,20 @@ DRUMS={36: 'Kick',
 
 def BPM_groove_handler(address, *args):
     """Takes a space separated string, parses it to BPM, Groove and composes a drum loop."""
-    print('\nGroove Received with Temperature {:.1f}.\nComposing...'.format(T[0]))
+    start_time=time.monotonic()
+    print('\nGroove Received with Temperature {:.3f}.\nComposing...'.format(T[0]))
     inp_message=args[0].split(' ') # First value is the BPM, rest is the groove
     BPM[0]=float(inp_message[0])
     GROOVE[0]=' '.join(inp_message[1:]) # workaround osc
     # Get N_COMPOSITIONS drum compositions in Max readable format
     messages=max_to_NN_to_max(GROOVE[0], BPM[0], groovae_2bar_tap, temperature=T[0], N=N_COMPOSITIONS)
     # Send to Max by /pattern/drum/
-    for i,msg in enumerate(messages):       
+    for i,msg in enumerate(messages):
         for drum,max_str in msg.items():
             py_to_pd_OscSender.send_message(f"/pattern/{i}/{drum}", max_str) 
         print(f"{i}: {[DRUMS[n] for n in list(msg.keys())]}")
     py_to_pd_OscSender.send_message("/flag", 1) # Let Max know the transmission is complete
-    print('Sent all the Compositions.')
+    print('Sent all the Compositions in: {:.3f}seconds.'.format(time.monotonic()-start_time))
 
 def temperature_handler(address, *args):
     T[0]=args[0]
